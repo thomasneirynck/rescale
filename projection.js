@@ -120,14 +120,14 @@ class Projection {
         const [wMeters, sMeters] = this._pseudoMercator.forward([wLonOfMap, sLatOfMap]);
         const [eMeters, nMeters] = this._pseudoMercator.forward([eLonOfMap, nLatOfMap]);
 
-        const scaleX = (this._widthInPixels) / (eMeters - wMeters);
-        const scaleY = (this._heightInPixels) / (nMeters - sMeters); //orientation of world->view is flipped
+        const scaleX = (this._widthInPixels - 0) / (eMeters - wMeters);
+        const scaleY = (0 - this._heightInPixels) / (nMeters - sMeters); //orientation of world->view is flipped
 
         const translateX = 0 - (scaleX * wMeters);
-        const translateY = 0 - (scaleY * sMeters);
+        const translateY = this._heightInPixels - (scaleY * sMeters);
 
         const xMeters = (pixelX - translateX) / scaleX;
-        const yMeters = (pixelY - translateY) / -scaleY;
+        const yMeters = (pixelY - translateY) / scaleY;
 
         return this.reverseProjectWebMercatorXYToDomainXY(xMeters, yMeters);
     }
@@ -209,7 +209,7 @@ const bottomRight = projection.convertPixelXYToDomainXY(widthInPixels, heightInP
 console.log({topLeft, bottomLeft, middle, topRight, bottomRight});
 
 
-//Zoomed out in bottom left
+//Zoomed in in bottom left
 const topLeftBl = projection.convertPixelXYToDomainXY(0, 0, -180, -90, 0, 0);
 const bottomLeftBl = projection.convertPixelXYToDomainXY(0, heightInPixels,  -180, -90, 0, 0);
 const middleBl = projection.convertPixelXYToDomainXY(widthInPixels / 2, heightInPixels / 2, -180, -90, 0, 0);
