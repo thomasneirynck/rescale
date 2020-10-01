@@ -30,7 +30,7 @@ function sinh(x) {
 
 class Projection {
 
-    constructor({widthInPixels, heightInPixels, minXInDomain, maxXInDomain, minYInDomain, maxYInDomain}) {
+    constructor({widthInPixels, heightInPixels, minXInDomain, maxXInDomain, minYInDomain, maxYInDomain, wLon = -180, sLat = -85.0511287798066, eLon = 180, nLat = 85.0511287798066}) {
 
         if (widthInPixels <= 0 || heightInPixels <= 0 || maxXInDomain - minXInDomain <= 0 || maxYInDomain - minYInDomain <= 0) {
             throw new Error('Cannot have unbounded domains');
@@ -47,31 +47,23 @@ class Projection {
             throw new Error('Cannot have 0-height in domain');
         }
 
-        this._pseudoMercator = new SphericalMercator({
-            size: 256
-        });
-    }
+        this._pseudoMercator = new SphericalMercator();
 
-    getAspectRatioOfViewPort() {
-        return this._widthInPixels / this._heightInPixels;
-    }
+        const [minx, miny] = this._pseudoMercator.forward([wLon,sLat]);
+        this._mercatorMinX = minx;
+        this._mercatorMinY = miny;
+        const [maxx, maxy] = this._pseudoMercator.forward([eLon,nLat]);
+        this._mercatorMaxX = maxx;
+        this._mercatorMaxY = maxy;
 
-    getAspectRatioOfDomain() {
-        return (this._maxXInDomain - this._minXInDomain) / ((this._maxYInDomain - this._minYInDomain));
     }
 
     getTransformationParams() {
-        const mercatorMinX = -SphericalMercator.getMaxExtentInMeters();
-        const mercatorMaxX = SphericalMercator.getMaxExtentInMeters();
+        const scaleX = (this._mercatorMaxX - this._mercatorMinX) / (this._maxXInDomain - this._minXInDomain);
+        const scaleY = (this._mercatorMaxY - this._mercatorMinY) / (this._maxYInDomain - this._minYInDomain);
 
-        const mercatorMinY = -SphericalMercator.getMaxExtentInMeters();
-        const mercatorMaxY = SphericalMercator.getMaxExtentInMeters();
-
-        const scaleX = (mercatorMaxX - mercatorMinX) / (this._maxXInDomain - this._minXInDomain);
-        const scaleY = (mercatorMaxY - mercatorMinY) / (this._maxYInDomain - this._minYInDomain);
-
-        const translateX = mercatorMinX - (scaleX * this._minXInDomain);
-        const translateY = mercatorMinY - (scaleY * this._minYInDomain);
+        const translateX = this._mercatorMinX - (scaleX * this._minXInDomain);
+        const translateY = this._mercatorMinY - (scaleY * this._minYInDomain);
 
         return {scaleX, scaleY, translateX, translateY};
     }
@@ -128,14 +120,14 @@ class Projection {
         const [wMeters, sMeters] = this._pseudoMercator.forward([wLonOfMap, sLatOfMap]);
         const [eMeters, nMeters] = this._pseudoMercator.forward([eLonOfMap, nLatOfMap]);
 
-        const scaleX =  (this._widthInPixels) / (eMeters - wMeters);
-        const scaleY =  (this._heightInPixels) / (nMeters - sMeters); //orientation of world->view is flipped
+        const scaleX = (this._widthInPixels) / (eMeters - wMeters);
+        const scaleY = (this._heightInPixels) / (nMeters - sMeters); //orientation of world->view is flipped
 
         const translateX = 0 - (scaleX * wMeters);
         const translateY = 0 - (scaleY * sMeters);
 
         const xMeters = (pixelX - translateX) / scaleX;
-        const yMeters = (pixelY - translateY) / - scaleY;
+        const yMeters = (pixelY - translateY) / -scaleY;
 
         return this.reverseProjectWebMercatorXYToDomainXY(xMeters, yMeters);
     }
@@ -192,27 +184,39 @@ console.log({topRightInMeters, topRightInLonLat});
 console.log('-----------------------------------');
 
 //zoom level 9
-const entireDomain = projection.convertTileXYZToDomainBbox(0,0,0);
+const entireDomain = projection.convertTileXYZToDomainBbox(0, 0, 0);
 console.log({entireDomain});
 
 
 //Zoom level 1
-const topLeftDomain = projection.convertTileXYZToDomainBbox(0,0,1);
-const bottomLeftDomain = projection.convertTileXYZToDomainBbox(0,1,1);
-const topRightDomain = projection.convertTileXYZToDomainBbox(1,0,1);
-const bottomRightDomain = projection.convertTileXYZToDomainBbox(1,1,1);
+const topLeftDomain = projection.convertTileXYZToDomainBbox(0, 0, 1);
+const bottomLeftDomain = projection.convertTileXYZToDomainBbox(0, 1, 1);
+const topRightDomain = projection.convertTileXYZToDomainBbox(1, 0, 1);
+const bottomRightDomain = projection.convertTileXYZToDomainBbox(1, 1, 1);
 
 console.log({topLeftDomain, bottomLeftDomain, topRightDomain, bottomRightDomain});
 
 
 console.log('-----------------------------------');
-const topLeft = projection.convertPixelXYToDomainXY(0,0, -180, -90, 180, 90);
-const bottomLeft = projection.convertPixelXYToDomainXY(0,heightInPixels, -180, -90, 180, 90);
-const middle = projection.convertPixelXYToDomainXY(widthInPixels/2,heightInPixels/2, -180, -90, 180, 90);
-const topRight = projection.convertPixelXYToDomainXY(widthInPixels,0, -180, -90, 180, 90);
-const bottomRight = projection.convertPixelXYToDomainXY(widthInPixels,heightInPixels, -180, -90, 180, 90);
+
+//Zoomed out
+const topLeft = projection.convertPixelXYToDomainXY(0, 0, -180, -90, 180, 90);
+const bottomLeft = projection.convertPixelXYToDomainXY(0, heightInPixels, -180, -90, 180, 90);
+const middle = projection.convertPixelXYToDomainXY(widthInPixels / 2, heightInPixels / 2, -180, -90, 180, 90);
+const topRight = projection.convertPixelXYToDomainXY(widthInPixels, 0, -180, -90, 180, 90);
+const bottomRight = projection.convertPixelXYToDomainXY(widthInPixels, heightInPixels, -180, -90, 180, 90);
 
 console.log({topLeft, bottomLeft, middle, topRight, bottomRight});
+
+
+//Zoomed out in bottom left
+const topLeftBl = projection.convertPixelXYToDomainXY(0, 0, -180, -90, 0, 0);
+const bottomLeftBl = projection.convertPixelXYToDomainXY(0, heightInPixels,  -180, -90, 0, 0);
+const middleBl = projection.convertPixelXYToDomainXY(widthInPixels / 2, heightInPixels / 2, -180, -90, 0, 0);
+const topRightBl = projection.convertPixelXYToDomainXY(widthInPixels, 0, -180, -90, 0, 0);
+const bottomRightBl = projection.convertPixelXYToDomainXY(widthInPixels, heightInPixels,  -180, -90, 0, 0);
+
+console.log({topLeftBl, bottomLeftBl, middleBl, topRightBl, bottomRightBl});
 
 
 
