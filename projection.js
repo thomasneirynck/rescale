@@ -91,6 +91,12 @@ class Projection {
         return {lon, lat};
     }
 
+    //Use this to convert map location to domain coordinate
+    convertLonLatToDomainXY(lon, lat) {
+        const [xMeters, yMeters] = this._pseudoMercator.forward([lon, lat]);
+        return this.reverseProjectWebMercatorXYToDomainXY(xMeters, yMeters);
+    }
+
     //Use this to get the ranges for the ES-queries
     convertTileXYZToDomainBbox(x, y, z) {
 
@@ -228,7 +234,9 @@ const bottomRightTR = projection.convertPixelXYToDomainXY(widthInPixels, heightI
 console.log({topLeftTR, bottomLeftTR, middleTR, topRightTR, bottomRightTR});
 
 
-
+console.log('-----------------------------------');
+const domain = projection.convertLonLatToDomainXY(0,0);
+console.log({domain});
 
 
 
