@@ -1,3 +1,5 @@
+//Taken from https://github.com/mapbox/sphericalmercator
+
 var SphericalMercator = (function(){
 
 // Closures including constants and other precalculated values.

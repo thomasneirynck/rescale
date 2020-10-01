@@ -67,14 +67,11 @@ class Projection {
         const mercatorMinY = -SphericalMercator.getMaxExtentInMeters();
         const mercatorMaxY = SphericalMercator.getMaxExtentInMeters();
 
-
         const scaleX = (mercatorMaxX - mercatorMinX) / (this._maxXInDomain - this._minXInDomain);
         const scaleY = (mercatorMaxY - mercatorMinY) / (this._maxYInDomain - this._minYInDomain);
 
         const translateX = mercatorMinX - (scaleX * this._minXInDomain);
         const translateY = mercatorMinY - (scaleY * this._minYInDomain);
-
-        console.log('translate', translateX, translateY);
 
         return {scaleX, scaleY, translateX, translateY};
     }
@@ -125,13 +122,25 @@ class Projection {
     }
 
     // Use this to convert a mouse-position to coordinates in the domain
-    convertPixelXYToDomainXY(pixelX, pixelY, leftLongitudeOfMap, topLatitudeOfMap, zoomLevel) {
+    // pixelXY is viewport with top-left = (0,0)
+    convertPixelXYToDomainXY(pixelX, pixelY, wLonOfMap, sLatOfMap, eLonOfMap, nLatOfMap) {
 
+        const [wMeters, sMeters] = this._pseudoMercator.forward([wLonOfMap, sLatOfMap]);
+        const [eMeters, nMeters] = this._pseudoMercator.forward([eLonOfMap, nLatOfMap]);
+
+        const scaleX =  (this._widthInPixels) / (eMeters - wMeters);
+        const scaleY =  (this._heightInPixels) / (nMeters - sMeters); //orientation of world->view is flipped
+
+        const translateX = 0 - (scaleX * wMeters);
+        const translateY = 0 - (scaleY * sMeters);
+
+        const xMeters = (pixelX - translateX) / scaleX;
+        const yMeters = (pixelY - translateY) / - scaleY;
+
+        return this.reverseProjectWebMercatorXYToDomainXY(xMeters, yMeters);
     }
 
 }
-
-
 
 const minXInDomain = 0;
 const maxXInDomain = 1000;
@@ -139,9 +148,12 @@ const maxXInDomain = 1000;
 const minYInDomain = -1;
 const maxYInDomain = 1;
 
+const widthInPixels = 1000;
+const heightInPixels = 1000;
+
 const projection = new Projection({
-    widthInPixels: 1000,
-    heightInPixels: 1000,
+    widthInPixels,
+    heightInPixels,
     minXInDomain,
     maxXInDomain,
     minYInDomain,
@@ -151,7 +163,7 @@ const projection = new Projection({
 let domainX, domainY;
 
 //Bottom left of the screen
-console.log('-----------------------------------')
+console.log('-----------------------------------');
 domainX = minXInDomain;
 domainY = minYInDomain;
 const bottomLeftInMeters = projection.projectDomainXYToWebMercatorXY(domainX, domainY);
@@ -160,7 +172,7 @@ console.log({bottomLeftInMeters, bottomLeftInLonLat});
 
 
 //Center of the screen
-console.log('-----------------------------------')
+console.log('-----------------------------------');
 domainX = (maxXInDomain + minXInDomain) / 2;
 domainY = (maxYInDomain + minYInDomain) / 2;
 const nullIslandInMeters = projection.projectDomainXYToWebMercatorXY(domainX, domainY);
@@ -168,7 +180,7 @@ const nullIslandInLonLat = projection.convertDomainXYToLonLat(domainX, domainY);
 console.log({nullIslandInMeters, nullIslandInLonLat});
 
 //top rifght of the screen
-console.log('-----------------------------------')
+console.log('-----------------------------------');
 domainX = maxXInDomain;
 domainY = maxYInDomain;
 const topRightInMeters = projection.projectDomainXYToWebMercatorXY(domainX, domainY);
@@ -177,7 +189,8 @@ console.log({topRightInMeters, topRightInLonLat});
 
 
 //tiles
-console.log('-----------------------------------')
+console.log('-----------------------------------');
+
 //zoom level 9
 const entireDomain = projection.convertTileXYZToDomainBbox(0,0,0);
 console.log({entireDomain});
@@ -192,6 +205,14 @@ const bottomRightDomain = projection.convertTileXYZToDomainBbox(1,1,1);
 console.log({topLeftDomain, bottomLeftDomain, topRightDomain, bottomRightDomain});
 
 
+console.log('-----------------------------------');
+const topLeft = projection.convertPixelXYToDomainXY(0,0, -180, -90, 180, 90);
+const bottomLeft = projection.convertPixelXYToDomainXY(0,heightInPixels, -180, -90, 180, 90);
+const middle = projection.convertPixelXYToDomainXY(widthInPixels/2,heightInPixels/2, -180, -90, 180, 90);
+const topRight = projection.convertPixelXYToDomainXY(widthInPixels,0, -180, -90, 180, 90);
+const bottomRight = projection.convertPixelXYToDomainXY(widthInPixels,heightInPixels, -180, -90, 180, 90);
+
+console.log({topLeft, bottomLeft, middle, topRight, bottomRight});
 
 
 
