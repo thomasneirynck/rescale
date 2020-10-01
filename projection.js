@@ -49,10 +49,10 @@ class Projection {
 
         this._pseudoMercator = new SphericalMercator();
 
-        const [minx, miny] = this._pseudoMercator.forward([wLon,sLat]);
+        const [minx, miny] = this._pseudoMercator.forward([wLon, sLat]);
         this._mercatorMinX = minx;
         this._mercatorMinY = miny;
-        const [maxx, maxy] = this._pseudoMercator.forward([eLon,nLat]);
+        const [maxx, maxy] = this._pseudoMercator.forward([eLon, nLat]);
         this._mercatorMaxX = maxx;
         this._mercatorMaxY = maxy;
 
@@ -209,14 +209,23 @@ const bottomRight = projection.convertPixelXYToDomainXY(widthInPixels, heightInP
 console.log({topLeft, bottomLeft, middle, topRight, bottomRight});
 
 
-//Zoomed in in bottom left
+//Zoomed in on bottom left
 const topLeftBl = projection.convertPixelXYToDomainXY(0, 0, -180, -90, 0, 0);
-const bottomLeftBl = projection.convertPixelXYToDomainXY(0, heightInPixels,  -180, -90, 0, 0);
+const bottomLeftBl = projection.convertPixelXYToDomainXY(0, heightInPixels, -180, -90, 0, 0);
 const middleBl = projection.convertPixelXYToDomainXY(widthInPixels / 2, heightInPixels / 2, -180, -90, 0, 0);
 const topRightBl = projection.convertPixelXYToDomainXY(widthInPixels, 0, -180, -90, 0, 0);
-const bottomRightBl = projection.convertPixelXYToDomainXY(widthInPixels, heightInPixels,  -180, -90, 0, 0);
+const bottomRightBl = projection.convertPixelXYToDomainXY(widthInPixels, heightInPixels, -180, -90, 0, 0);
 
 console.log({topLeftBl, bottomLeftBl, middleBl, topRightBl, bottomRightBl});
+
+//Zoomed in on top right
+const topLeftTR = projection.convertPixelXYToDomainXY(0, 0, 0, 0, 180, 90);
+const bottomLeftTR = projection.convertPixelXYToDomainXY(0, heightInPixels, 0, 0, 180, 90);
+const middleTR = projection.convertPixelXYToDomainXY(widthInPixels / 2, heightInPixels / 2, 0, 0, 180, 90);
+const topRightTR = projection.convertPixelXYToDomainXY(widthInPixels, 0, 0, 0, 180, 90);
+const bottomRightTR = projection.convertPixelXYToDomainXY(widthInPixels, heightInPixels, 0, 0, 180, 90);
+
+console.log({topLeftTR, bottomLeftTR, middleTR, topRightTR, bottomRightTR});
 
 
 
